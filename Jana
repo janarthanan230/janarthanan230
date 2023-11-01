@@ -1,0 +1,48 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+# Generate some example traffic data (replace this with your actual data)
+traffic_data = np.sin(np.linspace(0, 100, 100) * 0.1) + np.random.normal(0, 0.1, 100)
+
+# Prepare the data
+def prepare_data(data, n_steps):
+    X, y = [], []
+    for i in range(len(data)):
+        end_ix = i + n_steps
+        if end_ix > len(data)-1:
+            break
+        seq_x, seq_y = data[i:end_ix], data[end_ix]
+        X.append(seq_x)
+        y.append(seq_y)
+    return np.array(X), np.array(y)
+
+n_steps = 3  # Number of time steps to consider for prediction
+X, y = prepare_data(traffic_data, n_steps)
+
+# Reshape the data for LSTM input
+X = X.reshape((X.shape[0], X.shape[1], 1))
+
+# Define the LSTM model
+model = Sequential()
+model.add(LSTM(50, activation='relu', input_shape=(n_steps, 1)))
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mse')
+
+# Train the model
+model.fit(X, y, epochs=200, verbose=0)
+
+# Make predictions
+test_data = traffic_data[-n_steps:]
+X_test = np.array([test_data])
+X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+predicted_traffic = model.predict(X_test, verbose=0)
+
+print(f"Predicted traffic value: {predicted_traffic[0][0]}")
+
+# Plot the results
+plt.plot(traffic_data, label='Actual Traffic Data')
+plt.plot(range(len(traffic_data)-1, len(traffic_data)+n_steps), [predicted_traffic[0][0]]*n_steps, label='Predicted Traffic', linestyle='dashed')
+plt.legend()
+plt.show()
